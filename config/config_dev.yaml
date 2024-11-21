@@ -1,0 +1,82 @@
+app_name: 'lottery'
+env: dev
+debug_port: '40000'
+
+http:
+  port: '8080'
+
+log:
+  level: 'debug'
+  encoding: console
+  encode_time: '2006-01-02T15:04:05.000Z0700'
+  filename: './logs/service.log'
+  max_size: 1024
+  max_backups: 30
+  max_age: 30
+  compress: true
+  encode_level: '[level]'
+  use_stdout: true
+
+mysql:
+  host: '127.0.0.1'
+  port: '3306'
+  username: 'root'
+  password: 'houlangfeilang'
+  dbname: 'lottery'
+  config: 'charset=utf8&parseTime=true'
+  max_idle_conns: 60
+  max_open_conns: 100
+  max_life_time: 3600
+
+redis:
+  addr: '127.0.0.1:6379'
+  password: 'baimafeima'
+  db: 0
+redis_stream:
+  - name: 'lottery'
+    group: 'lottery'
+  - name: 'award'
+    group: 'award'
+lottery:
+  activity_id: 12345 # 活动ID
+  price: 100 # 每抽价格
+  star_levels:
+    - level: 1
+      weight: 60
+      prizes:
+        - id: 101
+          num: 1
+          weight: 100
+        - id: 102
+          num: 1
+          weight: 100
+        - id: 103
+          num: 1
+          weight: 100
+        - id: 104
+          num: 1
+          weight: 100
+        - id: 105
+          num: 1
+          weight: 100
+        - id: 106
+          num: 1
+          weight: 100
+    - level: 2
+      weight: 30
+      prizes:
+        - id: 201
+          num: 1
+          weight: 25
+        - id: 202
+          num: 1
+          weight: 25
+        - id: 203
+          num: 1
+          weight: 50
+    - level: 3
+      weight: 10
+      prizes:
+        - id: 301
+          num: 1
+          weight: 100
