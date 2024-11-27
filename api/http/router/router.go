@@ -17,8 +17,11 @@ func SetRoutes(uc usecase.UcAll, log *zap.Logger, gin *gin.Engine, rdb *redis.Cl
 	//protectedRouter := gin.Group("")
 
 	publicRouter.Use(
+
 		middleware.RateLimitMiddleware(600, 6000),
 		middleware.RequestIdMiddleware(rdb),
+
+		middleware.TracingMiddleware(), // 添加追踪中间件
 		//middleware.RepeatedLimitMiddleware(rdb),
 	)
 

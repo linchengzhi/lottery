@@ -21,14 +21,15 @@ func NewUserAssetRepo(db *gorm.DB) UserAssetRepo {
 
 // Create 创建资产表
 func (r *UserAssetRepo) Create(ctx context.Context, at *entity.UserAsset) error {
-	return r.db.WithContext(ctx).Create(&at).Error
+	return r.db.WithContext(ctx).Table(at.TableName()).Create(&at).Error
 }
 
 // Get 根据 user_id 获取资产信息
 func (r *UserAssetRepo) Get(ctx context.Context, userId int64) (*entity.UserAsset, error) {
 	var asset entity.UserAsset
 	// 使用 Gorm 查询资产表
-	if err := r.db.WithContext(ctx).Where("user_id = ?", userId).First(&asset).Error; err != nil {
+	userAsset := entity.UserAsset{UserID: userId}
+	if err := r.db.WithContext(ctx).Table(userAsset.TableName()).Where("user_id = ?", userId).First(&asset).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) { // 用户不存在, 自动创建资产表
 			asset = entity.UserAsset{UserID: userId}
 			if err := r.db.WithContext(ctx).Create(&asset).Error; err != nil {
@@ -44,7 +45,7 @@ func (r *UserAssetRepo) Get(ctx context.Context, userId int64) (*entity.UserAsse
 func (r *UserAssetRepo) Update(ctx context.Context, at *entity.UserAsset, requestId string, requestTime time.Time) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 更新资产表，确保更新后的值不小于零
-		result := tx.Model(&entity.UserAsset{}).
+		result := tx.Table(at.TableName()).Model(&entity.UserAsset{}).
 			Where("user_id = ? AND gold + ? >= 0 AND stone + ? >= 0 AND crystal + ? >= 0",
 				at.UserID, at.Gold, at.Stone, at.Crystal).
 			Updates(map[string]interface{}{
@@ -71,7 +72,7 @@ func (r *UserAssetRepo) Update(ctx context.Context, at *entity.UserAsset, reques
 			RequestID:   requestId,
 			RequestTime: requestTime,
 		}
-		if err := tx.Create(&assetRecord).Error; err != nil {
+		if err := tx.Table(assetRecord.TableName()).Create(&assetRecord).Error; err != nil {
 			return err
 		}
 		return nil

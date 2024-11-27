@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -17,7 +18,7 @@ type UserAssetRecord struct {
 }
 
 func (u *UserAssetRecord) TableName() string {
-	return "user_asset_record"
+	return fmt.Sprintf("user_asset_record_%d", u.UserID%10)
 }
 
 type IAssetTransactionRepo interface {

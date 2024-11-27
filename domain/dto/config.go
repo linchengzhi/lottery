@@ -5,15 +5,16 @@ import (
 )
 
 type Config struct {
-	AppName   string         `yaml:"app_name"`
-	Env       string         `yaml:"env"`
-	DebugPort string         `yaml:"debug_port"`
-	HTTP      HTTP           `yaml:"http"`
-	Log       *logger.Config `yaml:"log"`
-	Mysql     Mysql          `yaml:"mysql"`
-	Redis     Redis          `yaml:"redis"`
-	Stream    []RedisStream  `yaml:"redis_stream"`
-	Lottery   LotteryConf    `yaml:"lottery"`
+	AppName    string         `yaml:"app_name"`
+	Env        string         `yaml:"env"`
+	DebugPort  string         `yaml:"debug_port"`
+	HTTP       HTTP           `yaml:"http"`
+	Log        *logger.Config `yaml:"log"`
+	Mysql      Mysql          `yaml:"mysql"`
+	Redis      Redis          `yaml:"redis"`
+	Stream     []RedisStream  `yaml:"redis_stream"`
+	Lottery    LotteryConf    `yaml:"lottery"`
+	JaegerConf JaegerConf     `json:"jaeger" yaml:"jaeger"`
 }
 
 type HTTP struct {
@@ -49,4 +50,10 @@ type LotteryConf struct {
 	ActivityId int64        `json:"activity_id" yaml:"activity_id"`
 	Price      int64        `json:"price" yaml:"price"`
 	StarLevels []*StarLevel `json:"star_levels" yaml:"star_levels"`
+}
+
+type JaegerConf struct {
+	Host         string  `json:"host" yaml:"host"`
+	Port         string  `json:"port" yaml:"port"`
+	SamplingRate float64 `json:"sampling_rate" yaml:"sampling_rate"`
 }

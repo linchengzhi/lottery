@@ -117,9 +117,18 @@ func (g *Gorm) Printf(msg string, args ...interface{}) {
 
 // 自动生成表
 func AutoMigrate(db *gorm.DB) error {
-	db.AutoMigrate(entity.UserAsset{})
-	db.AutoMigrate(entity.UserItem{})
-	db.AutoMigrate(entity.UserAssetRecord{})
-	db.AutoMigrate(entity.UserItemRecord{})
+	for i := int64(0); i < 10; i++ {
+		asset := entity.UserAsset{UserID: i}
+		db.Table(asset.TableName()).AutoMigrate(asset)
+
+		assetRecord := entity.UserAssetRecord{UserID: i}
+		db.Table(assetRecord.TableName()).AutoMigrate(assetRecord)
+
+		userItem := entity.UserItem{UserID: i}
+		db.Table(userItem.TableName()).AutoMigrate(userItem)
+
+		userItemRecord := entity.UserItemRecord{UserID: i}
+		db.Table(userItemRecord.TableName()).AutoMigrate(userItemRecord)
+	}
 	return nil
 }

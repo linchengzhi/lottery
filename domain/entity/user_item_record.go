@@ -1,6 +1,9 @@
 package entity
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type UserItemRecord struct {
 	ID          int64     `gorm:"primaryKey;autoIncrement;comment:'用户物品变更记录ID'" json:"id"`
@@ -12,5 +15,5 @@ type UserItemRecord struct {
 }
 
 func (u *UserItemRecord) TableName() string {
-	return "user_item_record"
+	return fmt.Sprintf("user_item_record_%d", u.UserID%10)
 }

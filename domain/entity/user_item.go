@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -13,11 +14,11 @@ type UserItem struct {
 }
 
 func (u *UserItem) TableName() string {
-	return "user_item"
+	return fmt.Sprintf("user_item_%d", u.UserID%10)
 }
 
 type IUserItemRepo interface {
 	Create(ctx context.Context, userId int64, items map[int64]int64) error
-	List(ctx context.Context, userId int64) ([]*UserItem, error, error)
+	List(ctx context.Context, userId int64) (map[int64]int64, error)
 	Update(ctx context.Context, userId int64, items map[int64]int64, requestId string, requestTime time.Time) error //同时更新物品表和插入记录表
 }

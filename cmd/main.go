@@ -3,13 +3,12 @@ package main
 import (
 	"encoding/gob"
 	"flag"
-	"github.com/linchengzhi/lottery/Infra/database/mysql_db"
-	"github.com/linchengzhi/lottery/cmd/initializer"
-	"github.com/linchengzhi/lottery/util"
-
 	"github.com/gin-gonic/gin"
+	"github.com/linchengzhi/lottery/Infra/database/mysql_db"
 	"github.com/linchengzhi/lottery/api/http/router"
+	"github.com/linchengzhi/lottery/cmd/initializer"
 	"github.com/linchengzhi/lottery/domain/entity"
+	"github.com/linchengzhi/lottery/util"
 	"go.uber.org/zap"
 )
 

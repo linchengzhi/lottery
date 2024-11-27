@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/linchengzhi/lottery/api/http/middleware"
 	"github.com/linchengzhi/lottery/domain/cerror"
 	"github.com/linchengzhi/lottery/domain/dto"
 	"github.com/linchengzhi/lottery/usecase/lottery_uc"
@@ -41,9 +42,13 @@ func (hdr *LotteryHdr) DrawLottery(c *gin.Context) {
 	hdr.log.Info("抽奖", zap.Any("req", req))
 
 	//设置30s超时
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	tracingCtx, exists := c.Get("tracingContext")
+	if !exists {
+		tracingCtx = c.Request.Context()
+	}
 
+	ctx, cancel := middleware.WithTimeoutAndSpan(tracingCtx.(context.Context), 30*time.Second)
+	defer cancel()
 	resp, err := hdr.lotteryUc.Draw(ctx, req)
 	if err != nil {
 		hdr.log.Error("抽奖失败", zap.Any("req", req), zap.Any("error", err))

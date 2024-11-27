@@ -13,6 +13,7 @@ import (
 	"github.com/linchengzhi/lottery/repository/redis_repo"
 	"github.com/linchengzhi/lottery/usecase/asset_uc"
 	"github.com/linchengzhi/lottery/util"
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"strings"
 	"sync"
@@ -61,6 +62,7 @@ type LotteryUc struct {
 type DrawData struct {
 	req    *dto.DrawReq
 	result chan *dto.DrawResp
+	ctx    context.Context // 添加 context 字段
 }
 
 type AwardData struct {
@@ -118,7 +120,7 @@ func (uc *LotteryUc) processDrawData(ctx context.Context) {
 		select {
 		case data := <-uc.reqCh:
 			uc.pool.Submit(func() {
-				resp, err := uc.lotteryHandle(ctx, data.req)
+				resp, err := uc.lotteryHandle(data.ctx, data.req)
 				data.result <- &dto.DrawResp{
 					RequestId: data.req.RequestId,
 					PrizeData: resp,
@@ -168,10 +170,16 @@ var drawDataPool = sync.Pool{
 
 // Draw 抽奖
 func (uc *LotteryUc) Draw(ctx context.Context, req *dto.DrawReq) (*dto.DrawResp, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Draw")
+	if span != nil {
+		defer span.Finish()
+		span.SetTag("request_id", req.RequestId)
+	}
 	//设置参数到redis stream中
 	data := drawDataPool.Get().(*DrawData)
 	defer drawDataPool.Put(data)
 	data.req = req
+	data.ctx = ctx
 
 	uc.reqCh <- data
 	for {
@@ -179,63 +187,87 @@ func (uc *LotteryUc) Draw(ctx context.Context, req *dto.DrawReq) (*dto.DrawResp,
 		case resp := <-data.result:
 			return resp, resp.Err
 		case <-ctx.Done():
+			span.SetTag("error", true)
+			span.SetTag("error.message", "timeout")
 			return nil, cerror.ErrTimeout
 		}
 	}
 }
 
-// Draw 实现抽奖逻辑
 func (uc *LotteryUc) lotteryHandle(ctx context.Context, req *dto.DrawReq) (*dto.PrizeData, error) {
-	var err error
-	// 如果请求时间大于28s，则直接返回
+	span, ctx := opentracing.StartSpanFromContext(ctx, "lotteryHandle")
+	if span != nil {
+		defer span.Finish()
+		span.SetTag("request_id", req.RequestId)
+	}
+
+	// 检查请求时间
 	if time.Now().Unix()-req.RequestTime.Unix() > 28 {
 		uc.log.Warn("抽奖请求超时", zap.Any("req", req), zap.Any("now", time.Now()))
 		return nil, cerror.ErrTimeout
 	}
 
-	err = uc.lotteryCache.Set(ctx, req)
+	// 1. 设置抽奖请求缓存
+	cacheSpan, cacheCtx := opentracing.StartSpanFromContext(ctx, "set_lottery_cache")
+	defer cacheSpan.Finish()
+	err := uc.lotteryCache.Set(cacheCtx, req)
 	if err != nil {
 		uc.log.Warn("抽奖失败 设置缓存记录失败", zap.Any("req", req), zap.Error(err))
 		return nil, cerror.ErrBusy
 	}
 
-	// 读取对应的活动奖池
-	var puc IPrizePoolUc
-	puc, err = uc.getPrizePool(ctx, req.ActivityId)
+	// 读取奖池
+	poolSpan, poolCtx := opentracing.StartSpanFromContext(ctx, "get_prize_pool")
+	defer poolSpan.Finish()
+	puc, err := uc.getPrizePool(poolCtx, req.ActivityId)
 	if err != nil {
 		return nil, err
 	}
 
-	// 1. 从奖池随机抽取奖品
-	var prizesData *dto.PrizeData
-	prizesData, err = puc.RandomPrizes(ctx, req.UserId, req.DrawNum)
+	// 2. 随机抽取奖品
+	randomSpan, randomCtx := opentracing.StartSpanFromContext(ctx, "random_prizes")
+	defer randomSpan.Finish()
+	prizesData, err := puc.RandomPrizes(randomCtx, req.UserId, req.DrawNum)
 	if err != nil {
 		uc.log.Warn("抽奖失败 随机奖品失败", zap.Any("req", req), zap.Error(err))
 		return nil, err
 	}
 
+	// 3. 扣除用户资产
+	assetSpan, assetCtx := opentracing.StartSpanFromContext(ctx, "update_asset")
+	defer assetSpan.Finish()
 	at := new(entity.UserAsset)
 	at.UserID = req.UserId
 	at.Stone = -puc.getPrice(ctx) * req.DrawNum
-	// 2. 更新用户资产数据
-	err = uc.assetUc.UpdateAsset(ctx, at, req.RequestId, req.RequestTime) // 假设每次抽奖扣除用户资产
+	err = uc.assetUc.UpdateAsset(assetCtx, at, req.RequestId, req.RequestTime)
 	if err != nil {
 		uc.log.Warn("抽奖失败 更新资产失败", zap.Any("req", req), zap.Error(err))
 		return nil, err
 	}
 
+	// 4. 保存奖品列表到 redis stream
+	streamSpan, _ := opentracing.StartSpanFromContext(ctx, "save_to_stream")
+	defer streamSpan.Finish()
 	awardStream := new(dto.AwardStream)
 	awardStream.RequestId = req.RequestId
 	awardStream.RequestTime = req.RequestTime
 	awardStream.PrizeData = prizesData
 
-	// 3. 保存奖品列表到redis stream
 	byteAs, _ := sonic.Marshal(awardStream)
 	_, err = uc.awardRs.Add(string(byteAs))
 	if err != nil {
 		return nil, err
 	}
-	uc.lotteryCache.Del(ctx, req.RequestId)
+
+	// 5. 删除缓存
+	delSpan, delCtx := opentracing.StartSpanFromContext(ctx, "delete_cache")
+	defer delSpan.Finish()
+	uc.lotteryCache.Del(delCtx, req.RequestId)
+
+	// 设置总体执行结果标签
+	span.SetTag("success", true)
+	span.SetTag("prizes_count", len(prizesData.Prizes))
+
 	return prizesData, nil
 }
 

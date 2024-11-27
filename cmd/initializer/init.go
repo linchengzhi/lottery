@@ -8,6 +8,7 @@ import (
 	redis2 "github.com/linchengzhi/lottery/Infra/database/redis_db"
 	"github.com/linchengzhi/lottery/Infra/gpool"
 	"github.com/linchengzhi/lottery/Infra/logger"
+	"github.com/linchengzhi/lottery/Infra/tracing"
 	"github.com/linchengzhi/lottery/domain/dto"
 	"github.com/linchengzhi/lottery/repository/mysql_repo"
 	"github.com/linchengzhi/lottery/repository/redis_repo"
@@ -17,12 +18,14 @@ import (
 )
 
 type App struct {
-	Conf        *dto.Config
-	Log         *zap.Logger
-	MysqlLog    *zap.Logger
-	GPool       *gpool.Pool
-	MysqlDb     *mysql_db.Gorm
-	RedisDb     *redis.Client
+	Conf     *dto.Config
+	Log      *zap.Logger
+	MysqlLog *zap.Logger
+	GPool    *gpool.Pool
+
+	MysqlDb *mysql_db.Gorm
+	RedisDb *redis.Client
+
 	RedisStream redis_repo.RepoStream
 	RepoMysql   mysql_repo.RepoMysql
 	RepoRedis   redis_repo.RepoRedis
@@ -48,6 +51,10 @@ func (app *App) initialize(configPath string) error {
 	}
 
 	if err := app.initRedis(); err != nil {
+		return err
+	}
+
+	if err := app.initTracing(); err != nil {
 		return err
 	}
 
@@ -107,6 +114,20 @@ func (app *App) initRedis() error {
 		return err
 	}
 	app.RedisStream = stream
+	return nil
+}
+
+// 初始化链路追踪
+func (app *App) initTracing() error {
+	conf := new(tracing.Config)
+	conf.ServiceName = app.Conf.AppName
+	conf.JaegerHost = app.Conf.JaegerConf.Host
+	conf.JaegerPort = app.Conf.JaegerConf.Port
+	conf.SamplingRate = app.Conf.JaegerConf.SamplingRate
+	err := tracing.InitJaeger(*conf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

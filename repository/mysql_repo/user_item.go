@@ -18,13 +18,14 @@ func NewUserItemRepo(db *gorm.DB) UserItemRepo {
 }
 
 func (r *UserItemRepo) Create(ctx context.Context, userId int64, items map[int64]int64) error {
+	tableName := (&entity.UserItem{UserID: userId}).TableName()
 	for itemID, num := range items {
 		userItem := &entity.UserItem{
 			UserID: userId,
 			ItemID: itemID,
 			Num:    num,
 		}
-		if err := r.db.WithContext(ctx).Create(userItem).Error; err != nil {
+		if err := r.db.WithContext(ctx).Table(tableName).Create(userItem).Error; err != nil {
 			return err
 		}
 	}
@@ -33,7 +34,8 @@ func (r *UserItemRepo) Create(ctx context.Context, userId int64, items map[int64
 
 func (r *UserItemRepo) List(ctx context.Context, userId int64) (map[int64]int64, error) {
 	var userItems []*entity.UserItem
-	if err := r.db.WithContext(ctx).Where("user_id = ?", userId).Find(&userItems).Error; err != nil {
+	tableName := (&entity.UserItem{UserID: userId}).TableName()
+	if err := r.db.WithContext(ctx).Table(tableName).Where("user_id = ?", userId).Find(&userItems).Error; err != nil {
 		return nil, err
 	}
 	var result = make(map[int64]int64)
@@ -50,9 +52,9 @@ func (r *UserItemRepo) Update(ctx context.Context, userId int64, items map[int64
 		for itemId := range items {
 			itemIDs = append(itemIDs, itemId)
 		}
-
+		tableName := (&entity.UserItem{UserID: userId}).TableName()
 		// 查询所有相关物品
-		if err := tx.Where("user_id = ? AND item_id IN ?", userId, itemIDs).Find(&userItems).Error; err != nil {
+		if err := tx.Table(tableName).Where("user_id = ? AND item_id IN ?", userId, itemIDs).Find(&userItems).Error; err != nil {
 			return err
 		}
 
@@ -83,7 +85,7 @@ func (r *UserItemRepo) Update(ctx context.Context, userId int64, items map[int64
 		}
 
 		// 批量保存更新和新增的物品
-		if err := tx.Save(&userItems).Error; err != nil {
+		if err := tx.Table(tableName).Save(&userItems).Error; err != nil {
 			return err
 		}
 
@@ -100,7 +102,7 @@ func (r *UserItemRepo) Update(ctx context.Context, userId int64, items map[int64
 			RequestID:   requestId,
 			RequestTime: requestTime,
 		}
-		if err = tx.Create(&itemRecord).Error; err != nil {
+		if err = tx.Table(tableName).Create(&itemRecord).Error; err != nil {
 			return err
 		}
 		return nil

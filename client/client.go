@@ -19,7 +19,7 @@ type Result struct {
 
 func main() {
 	duration := 60 * time.Second
-	requestsPerSecond := 500
+	requestsPerSecond := 300
 
 	result := runLoadTest(duration, requestsPerSecond)
 

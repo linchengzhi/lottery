@@ -27,7 +27,6 @@ mysql:
   max_idle_conns: 60
   max_open_conns: 100
   max_life_time: 3600
-
 redis:
   addr: '127.0.0.1:6379'
   password: 'baimafeima'
@@ -37,6 +36,10 @@ redis_stream:
     group: 'lottery'
   - name: 'award'
     group: 'award'
+jaeger:
+  host: '127.0.0.1'
+  port: '14268'
+  sampling_rate: 0.01
 lottery:
   activity_id: 12345 # 活动ID
   price: 100 # 每抽价格

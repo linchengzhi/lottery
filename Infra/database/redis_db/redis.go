@@ -12,7 +12,7 @@ func NewRedis(host, password string, db int) (*redis.Client, error) {
 		Addr:         host,
 		Password:     password, // no password set
 		DB:           db,       // use default Db
-		PoolSize:     100,      // 连接池大小
+		PoolSize:     200,      // 连接池大小
 		MinIdleConns: 20,       // 最小空闲连接数
 		MaxConnAge:   time.Minute * 3,
 	})

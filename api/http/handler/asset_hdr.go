@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/linchengzhi/goany"
+	"github.com/linchengzhi/lottery/api/http/middleware"
 	"github.com/linchengzhi/lottery/domain/cerror"
 	"github.com/linchengzhi/lottery/usecase/asset_uc"
 	"github.com/linchengzhi/lottery/util"
@@ -22,6 +23,12 @@ func NewAssetHandler(uc asset_uc.AssetUc, log *zap.Logger) AssetHdr {
 }
 
 func (hdr *AssetHdr) GetAsset(c *gin.Context) {
+	span, err := middleware.StartSpanFromContext(c, "GetAsset")
+	if err != nil {
+		// 处理错误
+		return
+	}
+	defer span.Finish()
 	// 从body中读取用户id
 	uid, _ := c.GetPostForm("user_id")
 	if uid == "" {
