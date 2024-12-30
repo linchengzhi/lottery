@@ -7,7 +7,6 @@ import (
 	"github.com/linchengzhi/lottery/domain/cerror"
 	"github.com/linchengzhi/lottery/domain/dto"
 	"github.com/linchengzhi/lottery/usecase/lottery_uc"
-	"github.com/linchengzhi/lottery/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"time"
@@ -25,23 +24,21 @@ func NewLotteryHandler(uc lottery_uc.LotteryUc, log *zap.Logger) *LotteryHdr {
 	}
 }
 
-func (hdr *LotteryHdr) DrawLottery(c *gin.Context) {
+func (hdr *LotteryHdr) DrawLottery(c *gin.Context) (interface{}, error) {
 	req := new(dto.DrawReq)
 	if err := c.ShouldBindJSON(req); err != nil {
 		hdr.log.Error("参数错误", zap.Any("req", req), zap.Error(err))
-		util.RespondErr(c, cerror.ErrParam)
-		return
+		return nil, cerror.ErrParam
 	}
 	if err := hdr.validateDrawRequest(req); err != nil {
 		hdr.log.Error("抽奖失败", zap.Any("req", req), zap.Error(err))
-		util.RespondErr(c, err)
-		return
+		return nil, err
 	}
 	req.RequestId = c.GetHeader("request_id")
 	req.RequestTime = time.Now()
 	hdr.log.Info("抽奖", zap.Any("req", req))
 
-	//设置30s超时
+	// 设置30s超时
 	tracingCtx, exists := c.Get("tracingContext")
 	if !exists {
 		tracingCtx = c.Request.Context()
@@ -52,30 +49,28 @@ func (hdr *LotteryHdr) DrawLottery(c *gin.Context) {
 	resp, err := hdr.lotteryUc.Draw(ctx, req)
 	if err != nil {
 		hdr.log.Error("抽奖失败", zap.Any("req", req), zap.Any("error", err))
-		util.RespondErr(c, err)
-		return
+		return nil, err
 	}
 	hdr.log.Debug("抽奖成功", zap.Any("req", req))
-	util.Respond(c, resp)
+	return resp, nil
 }
 
-// List Article
-func (hdr *LotteryHdr) ListPrize(c *gin.Context) {
+func (hdr *LotteryHdr) ListPrize(c *gin.Context) (interface{}, error) {
 	req := new(dto.ListPrizeReq)
-	if err := c.ShouldBindJSON(req); err != nil {
+	// 对于 GET 请求，通常使用 Query 参数，而不是 JSON
+	if err := c.ShouldBindQuery(req); err != nil {
 		hdr.log.Error("参数错误", zap.Any("req", req), zap.Error(err))
-		util.RespondErr(c, cerror.ErrParam)
-		return
+		return nil, cerror.ErrParam
 	}
+
 	hdr.log.Info("获取奖品列表", zap.Any("req", req))
-	resp, err := hdr.lotteryUc.ListPrizes(c, req)
+	resp, err := hdr.lotteryUc.ListPrizes(c.Request.Context(), req)
 	if err != nil {
-		hdr.log.Error("抽奖失败", zap.Any("req", req), zap.Any("error", err))
-		util.RespondErr(c, err)
-		return
+		hdr.log.Error("获取奖品列表失败", zap.Any("req", req), zap.Error(err))
+		return nil, err
 	}
-	hdr.log.Debug("获取奖品列表成功", zap.Int("req", len(resp)))
-	util.Respond(c, resp)
+	hdr.log.Debug("获取奖品列表成功", zap.Int("prize_count", len(resp)))
+	return resp, nil
 }
 
 // 参数校验函数

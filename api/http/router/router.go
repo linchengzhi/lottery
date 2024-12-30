@@ -18,10 +18,10 @@ func SetRoutes(uc usecase.UcAll, log *zap.Logger, gin *gin.Engine, rdb *redis.Cl
 
 	publicRouter.Use(
 
-		middleware.RateLimitMiddleware(600, 6000),
+		middleware.RateLimitMiddleware(600, 12000),
 		middleware.RequestIdMiddleware(rdb),
 
-		middleware.TracingMiddleware(), // 添加追踪中间件
+		//middleware.TracingMiddleware(), // 添加追踪中间件
 		//middleware.RepeatedLimitMiddleware(rdb),
 	)
 
@@ -40,14 +40,14 @@ func NewLotteryRouter(uc usecase.UcAll, log *zap.Logger, public *gin.RouterGroup
 	ud := handler.NewLotteryHandler(uc.LotteryUc, log)
 
 	pu := public.Group("lottery")
-	pu.POST("draw", ud.DrawLottery)
-	pu.GET("prize/list", ud.ListPrize)
+	pu.POST("draw", Handle(ud.DrawLottery))
+	pu.GET("prize/list", Handle(ud.ListPrize))
 }
 
 func NewAssetRouter(uc usecase.UcAll, log *zap.Logger, public *gin.RouterGroup) {
 	ud := handler.NewAssetHandler(uc.AssetUc, log)
 
 	pu := public.Group("asset")
-	pu.GET("get", ud.GetAsset)
-	pu.GET("item/list", ud.ListItem)
+	pu.GET("get", Handle(ud.GetAsset))
+	pu.GET("item/list", Handle(ud.ListItem))
 }

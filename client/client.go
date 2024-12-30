@@ -17,6 +17,7 @@ type Result struct {
 	Failure int
 }
 
+// 主函数，功能为压测
 func main() {
 	duration := 60 * time.Second
 	requestsPerSecond := 300
@@ -26,6 +27,7 @@ func main() {
 	fmt.Printf("Load test completed.\nSuccessful requests: %d\nFailed requests: %d\n", result.Success, result.Failure)
 }
 
+// 压测函数
 func runLoadTest(duration time.Duration, requestsPerSecond int) Result {
 	result := Result{}
 	var wg sync.WaitGroup
@@ -58,6 +60,7 @@ func runLoadTest(duration time.Duration, requestsPerSecond int) Result {
 	return result
 }
 
+// 发送请求
 func sendRequest(userId int64) bool {
 	url := "http://127.0.0.1:8080/lottery/draw"
 
@@ -112,10 +115,12 @@ func sendRequest(userId int64) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
+// 生成请求ID
 func generateRequestId() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
+// 收集结果
 func collectResults(result *Result, resultChan <-chan bool) {
 	for success := range resultChan {
 		if success {

@@ -86,15 +86,15 @@ func StartSpanFromContext(c *gin.Context, operationName string) (opentracing.Spa
 // WithTimeoutAndSpan 创建一个同时包含超时和 span 信息的 context
 func WithTimeoutAndSpan(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	// 1. 保存原始的 span
-	span := opentracing.SpanFromContext(ctx)
+	//span := opentracing.SpanFromContext(ctx)
 
 	// 2. 创建超时 context
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), timeout)
 
 	// 3. 如果有 span，则添加到新的 context 中
-	if span != nil {
-		return opentracing.ContextWithSpan(timeoutCtx, span), cancel
-	}
+	//if span != nil {
+	//	return opentracing.ContextWithSpan(timeoutCtx, span), cancel
+	//}
 
 	return timeoutCtx, cancel
 }

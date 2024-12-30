@@ -10,6 +10,7 @@ import (
 	"github.com/linchengzhi/lottery/Infra/logger"
 	"github.com/linchengzhi/lottery/Infra/tracing"
 	"github.com/linchengzhi/lottery/domain/dto"
+	"github.com/linchengzhi/lottery/domain/types"
 	"github.com/linchengzhi/lottery/repository/mysql_repo"
 	"github.com/linchengzhi/lottery/repository/redis_repo"
 	"github.com/linchengzhi/lottery/usecase"
@@ -20,7 +21,7 @@ import (
 type App struct {
 	Conf     *dto.Config
 	Log      *zap.Logger
-	MysqlLog *zap.Logger
+	MysqlLog types.MysqlLogger
 	GPool    *gpool.Pool
 
 	MysqlDb *mysql_db.Gorm
@@ -132,7 +133,7 @@ func (app *App) initTracing() error {
 }
 
 func (app *App) initGoPool() {
-	pool, err := gpool.NewPool(app.Log, runtime.NumCPU()*30)
+	pool, err := gpool.NewPool(app.Log, runtime.NumCPU()*50)
 	if err != nil {
 		app.Log.Fatal("Failed to initialize go pool", zap.Error(err))
 	}

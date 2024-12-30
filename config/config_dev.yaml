@@ -25,7 +25,7 @@ mysql:
   dbname: 'lottery'
   config: 'charset=utf8&parseTime=true'
   max_idle_conns: 60
-  max_open_conns: 100
+  max_open_conns: 120
   max_life_time: 3600
 redis:
   addr: '127.0.0.1:6379'

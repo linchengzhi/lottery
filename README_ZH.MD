@@ -46,7 +46,8 @@ Cmd        # 项目运行入口，放Main函数和初始化代码
 Config     # 配置文件目录
 Docs       # 文档目录，存在项目说明文档
 Domain     # 存在实体结构，转换结构，以及常量，错误等定义
-Infra      # 基础组件目录，各类组件的初始化，如MySQL，Redis，Log
+Infra      # 内部基础组件目录，各类组件的初始化，如MySQL，Redis，Log
+External   # 外部服务，例如账号服务，推送服务等rpc，http调用
 Repository # 负责数据的交互，包括数据库操作，缓存操作，发送通知，请求第三方服务接口等
 Usecase    # 用例层，若逻辑复杂，可分多个目录
 ```

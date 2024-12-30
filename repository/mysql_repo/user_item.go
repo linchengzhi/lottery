@@ -102,7 +102,7 @@ func (r *UserItemRepo) Update(ctx context.Context, userId int64, items map[int64
 			RequestID:   requestId,
 			RequestTime: requestTime,
 		}
-		if err = tx.Table(tableName).Create(&itemRecord).Error; err != nil {
+		if err = tx.Table(itemRecord.TableName()).Create(&itemRecord).Error; err != nil {
 			return err
 		}
 		return nil

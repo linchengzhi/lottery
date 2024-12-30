@@ -104,7 +104,7 @@ func getGormConfig(g *Gorm, logMode string) *gorm.Config {
 
 func (g *Gorm) Printf(msg string, args ...interface{}) {
 	if len(args) == 4 {
-		d := "[%.3fms] [row:%d] %s"
+		d := "[%.3fms] [row:%v] %s"
 		g.log.Sugar().Infof(d, args[1:]...)
 	}
 
